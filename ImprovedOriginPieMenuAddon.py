@@ -508,28 +508,23 @@ classes = (
     MZOriginToSelected,
     MZTransformOrientationToRotation
 )
-keymaps = []
-
+addon_keymaps = []
 def registerKeymaps():
-    wm = bpy.context.window_manager 
-    kc = wm.keyconfigs['Blender User']
-    if kc:
-        km = kc.keymaps.new(
-                name='3D View Generic',
-                space_type='VIEW_3D'
-            )
-        kmi = km.keymap_items.new(
-                'wm.call_menu_pie',
-                'C',
-                'PRESS',
-                shift=True,
-                alt=True,
-                ctrl=True
-            )
-        kmi.properties.name = "origin.mz_origin_menu"   
-        keymaps.append((km, kmi))
-         
-def activateKeymaps():
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View Generic', space_type='VIEW_3D')
+        kmi = km.keymap_items.new('wm.call_menu_pie', 'C', 'PRESS', shift=True, alt=True,ctrl=True)
+        kmi.properties.name = "origin.mz_origin_menu"
+        addon_keymaps.append((km, kmi))
+
+
+def unregisterKeymaps():
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
+
+
+def deactivateConflictingKeymaps():
     wm = bpy.context.window_manager
     kc = wm.keyconfigs['Blender User']
     possibleConflicts = {
@@ -537,7 +532,6 @@ def activateKeymaps():
             '3D View Generic',
             '3D View',
             'Object Mode',
-            'User Interface',
             'Window'
         }
     for km in kc.keymaps:
@@ -547,27 +541,17 @@ def activateKeymaps():
                         kmi.type == 'C'
                         and kmi.shift
                         and kmi.ctrl
-                        and kmi.alt                    
+                        and kmi.alt
                     )
                 if condition:
                     kmi.active = False
-                    if hasattr(kmi.properties, 'name'):
-                        if kmi.properties.name == 'origin.mz_origin_menu':
-                            kmi.active = True 
-                 
-
-def unregisterKeymaps():
-    for kmi in bpy.context.window_manager.keyconfigs['Blender User'].keymaps['3D View Generic'].keymap_items:
-        if hasattr(kmi.properties, 'name'):
-            if kmi.properties.name == 'origin.mz_origin_menu':
-                kmi.active = False 
  
  
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     registerKeymaps()
-    activateKeymaps()
+    deactivateConflictingKeymaps()
 
 
 def unregister():
